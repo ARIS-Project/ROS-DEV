@@ -1,3 +1,4 @@
+# special thanks to http://hanzratech.in/2015/02/24/handwritten-digit-recognition-using-opencv-sklearn-and-python.html
 from PIL import Image
 import numpy
 import cv2
