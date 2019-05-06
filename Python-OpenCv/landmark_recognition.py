@@ -12,7 +12,7 @@ def bw_threshold(T,image):
     imageCopy = numpy.zeros(shape=(h,w))
     for y in range(0,h):
         for x in range(0,w):
-            imageCopy[y,x] = 255 if image[y,x] == T else 0
+            imageCopy[y,x] = 255 if (image[y,x] == T) else 0
     # convert the ndarray to CV8UC1 format otherwise this array can't find contours    
     cv8uc = cv2.normalize(imageCopy, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     return cv8uc
@@ -45,12 +45,19 @@ def assign_zero(final,x,y):
             return True
     return False
 
+prompt = '> '
+print "Give the path to your image:" 
+image_file_name = raw_input(prompt)
 # Take out gray scale images from RGB images    
-im_gray = cv2.imread("/home/kapil/Downloads/map_whitebackground.png",cv2.IMREAD_GRAYSCALE)
+#im_gray = cv2.imread("/home/kapil/Downloads/map_whitebackground.png",cv2.IMREAD_GRAYSCALE)
+im_gray = cv2.imread(image_file_name,cv2.IMREAD_GRAYSCALE)
 
+prompt = '> '
+print "Give the path to your Machine Learning Model:" 
+Model_file_name = raw_input(prompt)
 # To load the prediction classifier
-clf = joblib.load("/home/kapil/Downloads/digitRecognition/digitRecognition/digits_cls.pkl")
-
+#clf = joblib.load("/home/kapil/Downloads/digitRecognition/digitRecognition/digits_cls.pkl")
+clf = joblib.load(Model_file_name)
 #find binary image for green images
 im_bwG = bw_threshold(149,im_gray)
 
@@ -84,6 +91,7 @@ for rect in rects:
     roi = cv2.dilate(roi, (3, 3))
     # Calculate the HOG features
     roi_hog_fd = hog(roi, orientations=9, pixels_per_cell=(14, 14), cells_per_block=(1, 1), visualise=False)
+    # Actual Prediction of numbers
     nbr = clf.predict(numpy.array([roi_hog_fd], 'float64'))
     print str(int(nbr[0]))
     numCenterDict[int(nbr[0])] = numpy.array((x,y))
@@ -95,6 +103,7 @@ print numCenterDict
 
 #print centroidsG[1][0]
 
+#Loop to find minimum distance between digit centre and door centre and assign centre to the specific number
 finalDict = {}
 for dictKey in numCenterDict.keys():
     numCenterVal = numCenterDict[dictKey]
@@ -111,12 +120,57 @@ for gObjCnter in range(1,gRows,1):
         finalDict[0] = numpy.array((x,y))
 print finalDict
 
+#To find max x distance equivalent to image
+prompt = '> '
+print "Give the max x distance equivalent to image:" 
+xMax = raw_input(prompt)
+
+#To find max y distance equivalent to image
+prompt = '> '
+print "Give the max y distance equivalent to image:" 
+yMax = raw_input(prompt)
+
+yPixelMax = im_gray.shape[0]
+xPixelMax = im_gray.shape[1]
+#print "*************max Pixels Available*********"
+#print xPixelMax
+#print yPixelMAx
+#print "*************END**************************"
+# find factor for multiplication
+dx = float(xMax) / xPixelMax
+dy = float(yMax) / yPixelMax
+#print dx
+#print dy
+
+# Adding the factor from the map
+factoredDict = {}
+for dictkey in finalDict.keys():
+    dictVal = finalDict[dictkey]
+    x = dictVal[0] * dx
+    y = dictVal[1] * dy
+    #print str(x) + "," + str(y)
+    #print str(dictkey)
+    factoredDict[dictkey] = numpy.array((x,y))
+
 # for posting data to yaml file
+#print factoredDict
 centerName = "doorData"
-centerLocation = "/home/kapil/catkin_ws/src/aris_python/scripts"
+print "Please input the location where you want to save the yaml file"
+yaml_location = raw_input(prompt)
+#centerLocation = "/home/kapil/catkin_ws/src/aris_python/scripts"
+centerLocation = yaml_location
 completeFileNameYAML = os.path.join(centerLocation, centerName + ".yaml")
 yaml = open(completeFileNameYAML, "w")
-yaml.write(str(finalDict))
+yaml.write(str(factoredDict))
+
+centerLocation = yaml_location
+completeFileNameYAML = os.path.join(centerLocation, centerName + ".txt")
+text = open(completeFileNameYAML, "w")
+for dictkey in factoredDict.keys():
+    dictVal = factoredDict[dictkey]
+    x = dictVal[0]
+    y = dictVal[1]
+    text.write(str(dictkey) + ";" + str(x) + ";" + str(y) + "\n")
 
 # ********************** All for Debugging ****************************
 #plt.subplot(1,2,1),plt.imshow(im_gray, cmap = 'gray', interpolation= 'bicubic')
