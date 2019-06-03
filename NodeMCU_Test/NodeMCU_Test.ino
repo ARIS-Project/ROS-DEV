@@ -6,7 +6,7 @@
 #include <aris_msgs/aris_service.h>
 #include "NodeMCUClass.h"
 
-#define FIREBASE_HOST "arisproject-89cf8.firebaseio.com"
+#define FIREBASE_HOST ""
 #define FIREBASE_AUTH ""
 #define WIFI_SSID "AndroidAP"
 #define WIFI_PASSWORD ""
